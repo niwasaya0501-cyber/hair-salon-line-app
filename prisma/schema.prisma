@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// お客様（LINEの友だち = 予約者）
+model Customer {
+  id           String        @id @default(cuid())
+  lineUserId   String        @unique
+  displayName  String
+  phoneNumber  String?
+  createdAt    DateTime      @default(now())
+  reservations Reservation[]
+}
+
+// スタイリスト
+model Staff {
+  id           String        @id @default(cuid())
+  name         String
+  isActive     Boolean       @default(true)
+  sortOrder    Int           @default(0)
+  weeklyOffDay Int? // 定休日（0=日曜〜6=土曜）。nullなら定休日なし
+  reservations Reservation[]
+}
+
+// 施術メニュー
+model Service {
+  id              String        @id @default(cuid())
+  name            String
+  durationMinutes Int
+  price           Int
+  isActive        Boolean       @default(true)
+  sortOrder       Int           @default(0)
+  reservations    Reservation[]
+}
+
+enum ReservationStatus {
+  CONFIRMED
+  CANCELED
+  COMPLETED
+}
+
+model Reservation {
+  id         String             @id @default(cuid())
+  customer   Customer           @relation(fields: [customerId], references: [id])
+  customerId String
+  staff      Staff              @relation(fields: [staffId], references: [id])
+  staffId    String
+  service    Service            @relation(fields: [serviceId], references: [id])
+  serviceId  String
+  startAt    DateTime
+  endAt      DateTime
+  status     ReservationStatus  @default(CONFIRMED)
+  requestNote String? // ご要望・希望の髪型メモ（フェーズ3で問診フォームに拡張予定）
+  reminderSentAt DateTime? // 前日リマインド送信済みかどうかの記録（フェーズ2で使用）
+  createdAt  DateTime           @default(now())
+
+  @@index([staffId, startAt])
+  @@index([customerId])
+}
