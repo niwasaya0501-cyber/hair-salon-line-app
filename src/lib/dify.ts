@@ -38,3 +38,20 @@ export async function askDify(
   const data = (await res.json()) as DifyChatResponse;
   return { answer: data.answer, conversationId: data.conversation_id };
 }
+
+type DifyParametersResponse = {
+  opening_statement?: string;
+};
+
+// Difyアプリの「オープニングメッセージ」設定を取得する（未設定なら空文字を返す）
+export async function getDifyOpeningStatement(userId: string): Promise<string> {
+  if (!difyApiKey) return "";
+
+  const res = await fetch(`${difyApiBaseUrl}/parameters?user=${encodeURIComponent(userId)}`, {
+    headers: { Authorization: `Bearer ${difyApiKey}` },
+  });
+  if (!res.ok) return "";
+
+  const data = (await res.json()) as DifyParametersResponse;
+  return data.opening_statement ?? "";
+}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { messagingApi, webhook } from "@line/bot-sdk";
 import { replyMessage, verifyWebhookSignature } from "@/lib/line";
-import { askDify } from "@/lib/dify";
+import { askDify, getDifyOpeningStatement } from "@/lib/dify";
 import { prisma } from "@/lib/db";
 
 // LIFFの「エンドポイントURL」はこのプロジェクトの /liff/reserve に設定する想定
@@ -238,10 +238,12 @@ async function buildReservationCheckMessage(lineUserId: string): Promise<messagi
 async function handleEvent(event: webhook.Event) {
   if (event.type === "follow" && event.replyToken) {
     const liffUrl = reserveLiffUrl();
+    const lineUserId = event.source?.userId;
+    const openingStatement = lineUserId ? await getDifyOpeningStatement(lineUserId).catch(() => "") : "";
     const messages: messagingApi.Message[] = [
       {
         type: "text",
-        text: "友だち追加ありがとうございます！\nご予約はこちらから承っております。",
+        text: openingStatement || "友だち追加ありがとうございます！\nご予約はこちらから承っております。",
       },
     ];
     if (liffUrl) {
