@@ -122,6 +122,119 @@ async function buildMembershipCardMessage(lineUserId: string): Promise<messaging
   };
 }
 
+// リッチメニュー等から「予約確認」と送られた場合は、直近のご予約状況を返す
+const RESERVATION_CHECK_TRIGGER = "予約確認";
+const MAX_UPCOMING_RESERVATIONS = 3;
+
+function reservationRow(
+  label: string,
+  serviceName: string,
+  staffName: string
+): messagingApi.FlexBox {
+  return {
+    type: "box",
+    layout: "vertical",
+    spacing: "xs",
+    contents: [
+      { type: "text", text: label, size: "sm", weight: "bold", color: "#8B5E3C" },
+      { type: "text", text: `${serviceName} / 担当: ${staffName}`, size: "xs", color: "#4A3826", wrap: true },
+    ],
+  };
+}
+
+async function buildReservationCheckMessage(lineUserId: string): Promise<messagingApi.Message> {
+  const liffUrl = reserveLiffUrl();
+  const customer = await prisma.customer.findUnique({ where: { lineUserId } });
+
+  const noUpcomingActions: messagingApi.Action[] = liffUrl
+    ? [{ type: "uri", label: "今すぐ予約する", uri: liffUrl }]
+    : [];
+
+  if (!customer) {
+    return {
+      type: "template",
+      altText: "現在ご予約はありません",
+      template: {
+        type: "buttons",
+        text: "現在ご予約はありません。ご予約はこちらからどうぞ",
+        actions: noUpcomingActions,
+      },
+    };
+  }
+
+  const upcoming = await prisma.reservation.findMany({
+    where: { customerId: customer.id, status: "CONFIRMED", startAt: { gte: new Date() } },
+    orderBy: { startAt: "asc" },
+    take: MAX_UPCOMING_RESERVATIONS,
+    include: { service: true, staff: true },
+  });
+
+  if (upcoming.length === 0) {
+    return {
+      type: "template",
+      altText: "現在ご予約はありません",
+      template: {
+        type: "buttons",
+        text: "現在ご予約はありません。ご予約はこちらからどうぞ",
+        actions: noUpcomingActions,
+      },
+    };
+  }
+
+  const rows: (messagingApi.FlexBox | messagingApi.FlexSeparator)[] = [];
+  upcoming.forEach((r, i) => {
+    const dateLabel = new Intl.DateTimeFormat("ja-JP", {
+      timeZone: "Asia/Tokyo",
+      month: "long",
+      day: "numeric",
+      weekday: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(r.startAt);
+    if (i > 0) rows.push({ type: "separator", margin: "md", color: "#E8D9C8" });
+    rows.push(reservationRow(dateLabel, r.service.name, r.staff.name));
+  });
+
+  return {
+    type: "flex",
+    altText: `ご予約確認（${upcoming.length}件）`,
+    contents: {
+      type: "bubble",
+      size: "kilo",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#8B5E3C",
+        paddingAll: "16px",
+        contents: [
+          { type: "text", text: "HAIR SALON", size: "xs", color: "#F5E9DB" },
+          { type: "text", text: "NIWA ご予約確認", size: "md", weight: "bold", color: "#FFFFFF" },
+        ],
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#FAF3EA",
+        paddingAll: "16px",
+        spacing: "md",
+        contents: [
+          { type: "text", text: `${customer.displayName} 様`, weight: "bold", size: "sm", color: "#4A3826" },
+          { type: "box", layout: "vertical", spacing: "md", contents: rows },
+          { type: "separator", margin: "sm", color: "#E8D9C8" },
+          {
+            type: "text",
+            text: "ご予約の変更・キャンセルは、お電話にてサロンまでご連絡ください。",
+            size: "xs",
+            color: "#9C8570",
+            wrap: true,
+            margin: "sm",
+          },
+        ],
+      },
+    },
+  };
+}
+
 async function handleEvent(event: webhook.Event) {
   if (event.type === "follow" && event.replyToken) {
     const liffUrl = reserveLiffUrl();
@@ -180,6 +293,12 @@ async function handleEvent(event: webhook.Event) {
     if (text === MEMBERSHIP_CARD_TRIGGER) {
       const cardMessage = await buildMembershipCardMessage(lineUserId);
       await replyMessage(event.replyToken, [cardMessage]);
+      return;
+    }
+
+    if (text === RESERVATION_CHECK_TRIGGER) {
+      const checkMessage = await buildReservationCheckMessage(lineUserId);
+      await replyMessage(event.replyToken, [checkMessage]);
       return;
     }
 
