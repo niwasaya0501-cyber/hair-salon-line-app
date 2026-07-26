@@ -14,7 +14,6 @@ function reserveLiffUrl(): string {
 // リッチメニューから送られる固定テキスト。まだ実装していない機能はここで
 // Difyに問い合わせず「準備中」を返し、実装でき次第このリストから外す
 const RICH_MENU_PLACEHOLDER_REPLIES: Record<string, string> = {
-  メンバーズカード: "メンバーズカード機能は只今準備中です。近日公開予定ですので、今しばらくお待ちください🙏",
   ヘアグッズ購入: "ヘアグッズ購入は只今準備中です。近日公開予定ですので、今しばらくお待ちください🙏",
 };
 
@@ -26,6 +25,102 @@ const FAQ_MENU_INTRO =
 // リッチメニューの「サロン紹介」から送られた場合は、サロン紹介ページのリンクを返す
 const SALON_INTRO_TRIGGER = "サロン紹介";
 const SALON_INTRO_URL = "https://hair-salon-line-app.vercel.app/about";
+
+// リッチメニューの「メンバーズカード」から送られた場合は、来店スタンプの状況を返す
+// スタンプはご来店実績（開始日時が過去のキャンセルされていない予約）1件につき1個とする
+const MEMBERSHIP_CARD_TRIGGER = "メンバーズカード";
+const STAMPS_PER_REWARD = 10;
+
+// スタンプ1個分の四角（塗りつぶし=獲得済み／薄色=未獲得）
+function stampBox(filled: boolean): messagingApi.FlexBox {
+  return {
+    type: "box",
+    layout: "vertical",
+    width: "22px",
+    height: "22px",
+    cornerRadius: "6px",
+    backgroundColor: filled ? "#8B5E3C" : "#E8D9C8",
+    contents: [],
+  };
+}
+
+// スタンプを5個ずつ並べた行を作る
+function stampRow(filledInRow: number, totalInRow: number): messagingApi.FlexBox {
+  const boxes: messagingApi.FlexBox[] = [];
+  for (let i = 0; i < totalInRow; i++) {
+    boxes.push(stampBox(i < filledInRow));
+  }
+  return { type: "box", layout: "horizontal", spacing: "sm", contents: boxes };
+}
+
+function stampGrid(current: number, total: number): messagingApi.FlexBox {
+  const perRow = 5;
+  const rows: messagingApi.FlexBox[] = [];
+  for (let start = 0; start < total; start += perRow) {
+    const rowTotal = Math.min(perRow, total - start);
+    const rowFilled = Math.max(0, Math.min(rowTotal, current - start));
+    rows.push(stampRow(rowFilled, rowTotal));
+  }
+  return { type: "box", layout: "vertical", spacing: "sm", contents: rows };
+}
+
+async function buildMembershipCardMessage(lineUserId: string): Promise<messagingApi.Message> {
+  const customer = await prisma.customer.findUnique({ where: { lineUserId } });
+  if (!customer) {
+    return {
+      type: "text",
+      text: "ご来店履歴がまだありません。ご予約いただくと、ご来店ごとにスタンプが貯まります😊",
+    };
+  }
+
+  const visitCount = await prisma.reservation.count({
+    where: {
+      customerId: customer.id,
+      status: { not: "CANCELED" },
+      startAt: { lt: new Date() },
+    },
+  });
+
+  const rewardsEarned = Math.floor(visitCount / STAMPS_PER_REWARD);
+  const currentStamps = visitCount % STAMPS_PER_REWARD;
+  const footerMessage =
+    rewardsEarned > 0
+      ? `これまでに${rewardsEarned}枚の特典を獲得済みです🎉 ご来店時にスタッフへお申し付けください。`
+      : `あと${STAMPS_PER_REWARD - currentStamps}回のご来店で特典獲得です！`;
+
+  return {
+    type: "flex",
+    altText: `メンバーズカード（スタンプ ${currentStamps}/${STAMPS_PER_REWARD}）`,
+    contents: {
+      type: "bubble",
+      size: "kilo",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#8B5E3C",
+        paddingAll: "16px",
+        contents: [
+          { type: "text", text: "HAIR SALON", size: "xs", color: "#F5E9DB" },
+          { type: "text", text: "NIWA メンバーズカード", size: "md", weight: "bold", color: "#FFFFFF" },
+        ],
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#FAF3EA",
+        paddingAll: "16px",
+        spacing: "md",
+        contents: [
+          { type: "text", text: `${customer.displayName} 様`, weight: "bold", size: "sm", color: "#4A3826" },
+          { type: "text", text: `ご来店スタンプ ${currentStamps}/${STAMPS_PER_REWARD}`, size: "xs", color: "#9C8570" },
+          stampGrid(currentStamps, STAMPS_PER_REWARD),
+          { type: "separator", margin: "sm", color: "#E8D9C8" },
+          { type: "text", text: footerMessage, size: "xs", color: "#4A3826", wrap: true, margin: "sm" },
+        ],
+      },
+    },
+  };
+}
 
 async function handleEvent(event: webhook.Event) {
   if (event.type === "follow" && event.replyToken) {
@@ -53,6 +148,8 @@ async function handleEvent(event: webhook.Event) {
 
   if (event.type === "message" && event.message.type === "text" && event.replyToken) {
     const text = event.message.text.trim();
+    const lineUserId = event.source?.userId;
+    if (!lineUserId) return;
 
     const placeholderReply = RICH_MENU_PLACEHOLDER_REPLIES[text];
     if (placeholderReply) {
@@ -80,8 +177,11 @@ async function handleEvent(event: webhook.Event) {
       return;
     }
 
-    const lineUserId = event.source?.userId;
-    if (!lineUserId) return;
+    if (text === MEMBERSHIP_CARD_TRIGGER) {
+      const cardMessage = await buildMembershipCardMessage(lineUserId);
+      await replyMessage(event.replyToken, [cardMessage]);
+      return;
+    }
 
     const existing = await prisma.difyConversation.findUnique({ where: { lineUserId } });
 

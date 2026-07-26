@@ -9,6 +9,16 @@ type Step = "service" | "staff" | "datetime" | "note" | "confirm" | "done";
 
 const LIFF_ID = process.env.NEXT_PUBLIC_LIFF_ID;
 
+// 事前ヒアリング用のよくある要望（任意で複数選択。自由記述欄と合わせてrequestNoteに含める）
+const HEARING_OPTIONS = [
+  "イメージチェンジしたい",
+  "いつもと同じ感じで",
+  "髪の悩みを相談したい",
+  "傷んだ髪をケアしたい",
+  "前髪を作りたい／変えたい",
+  "白髪をカバーしたい",
+];
+
 function todayJstStr(): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Tokyo",
@@ -35,6 +45,7 @@ export default function ReservePage() {
   const [slots, setSlots] = useState<string[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [selectedHearingTags, setSelectedHearingTags] = useState<string[]>([]);
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -80,6 +91,20 @@ export default function ReservePage() {
       .finally(() => setSlotsLoading(false));
   }, [step, staff, service, date]);
 
+  // 選択したヒアリング項目＋自由記述をまとめて1つのご要望テキストにする
+  const combinedNote = useMemo(() => {
+    const parts = [];
+    if (selectedHearingTags.length > 0) parts.push(selectedHearingTags.join("、"));
+    if (note) parts.push(note);
+    return parts.join("\n");
+  }, [selectedHearingTags, note]);
+
+  function toggleHearingTag(tag: string) {
+    setSelectedHearingTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  }
+
   const slotLabels = useMemo(
     () =>
       slots.map((iso) => ({
@@ -106,7 +131,7 @@ export default function ReservePage() {
           staffId: staff.id,
           serviceId: service.id,
           startAt: selectedSlot,
-          requestNote: note || undefined,
+          requestNote: combinedNote || undefined,
         }),
       });
       if (!res.ok) {
@@ -200,9 +225,30 @@ export default function ReservePage() {
       {step === "note" && (
         <div>
           <BackButton onClick={() => setStep("datetime")} />
-          <p className="mb-3 text-base font-bold text-[#5C3D25]">
-            ご要望があればご記入ください（任意）
+          <p className="mb-1 text-base font-bold text-[#5C3D25]">事前ヒアリング（任意）</p>
+          <p className="mb-3 text-xs text-[#9C8570]">
+            当てはまるものがあれば選んでください。スタイリストが事前に把握し、当日の相談がスムーズになります。
           </p>
+          <div className="mb-4 flex flex-wrap gap-2">
+            {HEARING_OPTIONS.map((tag) => {
+              const selected = selectedHearingTags.includes(tag);
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  className={`rounded-full border-2 px-4 py-2 text-sm font-semibold transition-colors ${
+                    selected
+                      ? "border-[#8B5E3C] bg-[#8B5E3C] text-white"
+                      : "border-[#E8D9C8] bg-white text-[#4A3826] active:bg-[#F5EAE0]"
+                  }`}
+                  onClick={() => toggleHearingTag(tag)}
+                >
+                  {tag}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mb-2 text-sm font-semibold text-[#5C3D25]">その他ご要望（任意）</p>
           <textarea
             className="mb-4 w-full rounded-2xl border-2 border-[#E8D9C8] bg-white p-3 text-base"
             rows={4}
@@ -232,8 +278,13 @@ export default function ReservePage() {
                 minute: "2-digit",
               }).format(new Date(selectedSlot))}
             />
-            {note && <Row label="ご要望" value={note} />}
           </dl>
+          {combinedNote && (
+            <div className="mb-6 rounded-2xl border-2 border-[#E8D9C8] bg-white p-4 text-sm">
+              <p className="mb-1 text-[#9C8570]">ご要望</p>
+              <p className="whitespace-pre-wrap text-[#4A3826]">{combinedNote}</p>
+            </div>
+          )}
           {submitError && <p className="mb-4 text-sm text-red-600">{submitError}</p>}
           <PrimaryButton disabled={submitting} onClick={handleSubmit}>
             {submitting ? "送信中..." : "予約を確定する"}
