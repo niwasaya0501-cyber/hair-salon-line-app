@@ -31,6 +31,16 @@ export async function pushMessage(
   await getClient().pushMessage({ to, messages });
 }
 
+// 友だち追加時のあいさつ等で表示名を差し込むために使う（取得失敗時は「お客様」を返す）
+export async function getDisplayName(lineUserId: string): Promise<string> {
+  try {
+    const profile = await getClient().getProfile(lineUserId);
+    return profile.displayName || "お客様";
+  } catch {
+    return "お客様";
+  }
+}
+
 // Webhookの署名検証（なりすましリクエスト対策）
 export function verifyWebhookSignature(body: string, signature: string | null): boolean {
   if (!channelSecret || !signature) return false;

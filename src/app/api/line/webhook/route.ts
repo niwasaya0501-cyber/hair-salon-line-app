@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { messagingApi, webhook } from "@line/bot-sdk";
-import { replyMessage, verifyWebhookSignature } from "@/lib/line";
+import { replyMessage, verifyWebhookSignature, getDisplayName } from "@/lib/line";
 import { askDify, getDifyOpeningStatement } from "@/lib/dify";
 import { prisma } from "@/lib/db";
 
@@ -240,10 +240,12 @@ async function handleEvent(event: webhook.Event) {
     const liffUrl = reserveLiffUrl();
     const lineUserId = event.source?.userId;
     const openingStatement = lineUserId ? await getDifyOpeningStatement(lineUserId).catch(() => "") : "";
+    const greetingText = openingStatement || "友だち追加ありがとうございます！\nご予約はこちらから承っております。";
+    const displayName = lineUserId ? await getDisplayName(lineUserId) : "お客様";
     const messages: messagingApi.Message[] = [
       {
         type: "text",
-        text: openingStatement || "友だち追加ありがとうございます！\nご予約はこちらから承っております。",
+        text: greetingText.replaceAll("{{name}}", displayName),
       },
     ];
     if (liffUrl) {
