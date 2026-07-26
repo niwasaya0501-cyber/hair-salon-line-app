@@ -13,9 +13,12 @@ function reserveLiffUrl(): string {
 
 // リッチメニューから送られる固定テキスト。まだ実装していない機能はここで
 // Difyに問い合わせず「準備中」を返し、実装でき次第このリストから外す
-const RICH_MENU_PLACEHOLDER_REPLIES: Record<string, string> = {
-  ヘアグッズ購入: "ヘアグッズ購入は只今準備中です。近日公開予定ですので、今しばらくお待ちください🙏",
-};
+const RICH_MENU_PLACEHOLDER_REPLIES: Record<string, string> = {};
+
+// リッチメニューの「ヘアグッズ購入」から送られた場合は、商品一覧ページのリンクを返す
+// （購入・決済機能は未実装。現時点では一覧の案内のみ）
+const SHOP_TRIGGER = "ヘアグッズ購入";
+const SHOP_URL = "https://hair-salon-line-app.vercel.app/shop";
 
 // リッチメニューの「よくある質問」から送られた場合は、Difyに丸投げせず案内文を返す
 const FAQ_MENU_TRIGGER = "よくある質問";
@@ -288,6 +291,21 @@ async function handleEvent(event: webhook.Event) {
             type: "buttons",
             text: "当サロンのご紹介はこちらからご覧いただけます",
             actions: [{ type: "uri", label: "サロン紹介を見る", uri: SALON_INTRO_URL }],
+          },
+        },
+      ]);
+      return;
+    }
+
+    if (text === SHOP_TRIGGER) {
+      await replyMessage(event.replyToken, [
+        {
+          type: "template",
+          altText: "ヘアグッズ",
+          template: {
+            type: "buttons",
+            text: "取り扱いアイテムはこちらからご覧いただけます（購入は近日対応予定です）",
+            actions: [{ type: "uri", label: "ヘアグッズを見る", uri: SHOP_URL }],
           },
         },
       ]);

@@ -23,6 +23,35 @@ async function main() {
     ],
   });
 
+  await prisma.product.createMany({
+    data: [
+      {
+        name: "サロン専売シャンプー",
+        description: "髪と頭皮にやさしい、サロン専売のアミノ酸系シャンプー。",
+        price: 2800,
+        sortOrder: 1,
+      },
+      {
+        name: "アルガンオイル トリートメント",
+        description: "洗い流さないタイプ。乾燥・パサつきが気になる方に。",
+        price: 3300,
+        sortOrder: 2,
+      },
+      {
+        name: "モイストヘアマスク",
+        description: "週1〜2回のスペシャルケアに。しっとりまとまる髪へ。",
+        price: 3500,
+        sortOrder: 3,
+      },
+      {
+        name: "洗い流さないトリートメントオイル",
+        description: "スタイリング前後どちらにも使える、軽い付け心地のオイル。",
+        price: 2500,
+        sortOrder: 4,
+      },
+    ],
+  });
+
   console.log("シードデータを投入しました");
 }
 

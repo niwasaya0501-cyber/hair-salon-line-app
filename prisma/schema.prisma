@@ -74,3 +74,14 @@ model DifyConversation {
   conversationId String
   updatedAt      DateTime @updatedAt
 }
+
+// ヘアグッズ（物販商品）。フェーズ8: 現時点では一覧表示のみで、購入・決済機能は未実装
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  price       Int
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+}
