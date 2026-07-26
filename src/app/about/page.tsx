@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { prisma } from "@/lib/db";
+import { StyleGallery } from "./StyleGallery";
 
 // 参考にした他サロンサイトの写真・文章はそのまま使わず、構成の雰囲気（大きなビジュアル→
 // コンセプト→スタイリスト→メニュー、の流れ／大文字の見出しラベル）だけを取り入れ、
@@ -89,16 +90,8 @@ export default async function AboutPage() {
         {stylePhotos.length > 0 && (
           <section className="mt-10 md:mt-14">
             <SectionLabel>STYLE</SectionLabel>
-            <div className="mt-3 grid grid-cols-3 gap-2 md:gap-4">
-              {stylePhotos.map((src) => (
-                // eslint-disable-next-line @next/next/no-img-element -- 任意設置の写真をそのまま表示するため
-                <img
-                  key={src}
-                  src={src}
-                  alt="施術後のスタイル例"
-                  className="aspect-square w-full rounded-lg object-cover shadow-sm"
-                />
-              ))}
+            <div className="mt-3">
+              <StyleGallery photos={stylePhotos} />
             </div>
           </section>
         )}
