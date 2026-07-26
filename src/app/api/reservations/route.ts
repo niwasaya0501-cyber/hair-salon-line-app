@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
     await pushMessage(lineUserId, [
       {
         type: "text",
-        text: `ご予約ありがとうございます！\n\n担当: ${staff.name}\nメニュー: ${service.name}\n日時: ${dateLabel}〜\n\n前日にリマインドをお送りします。ご来店をお待ちしております。`,
+        text: `ご予約ありがとうございます！\n\n担当: ${staff.name}\nメニュー: ${service.name}\n日時: ${dateLabel}〜\n\n前日にリマインドをお送りします。ご来店をお待ちしております。\n\n（予約内容を確認したいときは「予約確認」と送ってください）`,
       },
     ]);
   } catch {
