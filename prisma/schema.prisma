@@ -67,3 +67,10 @@ model Reservation {
   @@index([staffId, startAt])
   @@index([customerId])
 }
+
+// よくある質問Bot（Dify連携）の会話継続用。LINEのuserId単位でDify側のconversation_idを保持する
+model DifyConversation {
+  lineUserId     String   @id
+  conversationId String
+  updatedAt      DateTime @updatedAt
+}

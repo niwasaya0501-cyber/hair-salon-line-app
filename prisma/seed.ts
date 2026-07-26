@@ -9,7 +9,7 @@ const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 async function main() {
   await prisma.staff.createMany({
     data: [
-      { name: "山田 花子", sortOrder: 1, weeklyOffDay: 1 }, // 月曜定休
+      { name: "丹羽 紗也", sortOrder: 1, weeklyOffDay: 1 }, // 月曜定休
       { name: "佐藤 太郎", sortOrder: 2, weeklyOffDay: 2 }, // 火曜定休
     ],
   });

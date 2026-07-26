@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 type Staff = { id: string; name: string };
 type Service = { id: string; name: string; durationMinutes: number; price: number };
@@ -125,12 +125,12 @@ export default function ReservePage() {
     return <div className="p-6 text-sm text-red-600">{initError}</div>;
   }
   if (LIFF_ID && !liffReady) {
-    return <div className="p-6 text-sm text-gray-500">読み込み中...</div>;
+    return <div className="p-6 text-sm text-[#9C8570]">読み込み中...</div>;
   }
 
   return (
-    <div className="mx-auto max-w-md min-h-screen bg-white px-4 py-6">
-      <h1 className="mb-6 text-lg font-bold">ご予約</h1>
+    <div className="mx-auto min-h-screen max-w-md bg-[#FAF3EA] px-4 py-6 text-[#4A3826]">
+      <h1 className="mb-6 text-2xl font-bold text-[#5C3D25]">ご予約</h1>
 
       {step === "service" && (
         <StepList
@@ -163,29 +163,27 @@ export default function ReservePage() {
 
       {step === "datetime" && (
         <div>
-          <button className="mb-4 text-sm text-gray-500" onClick={() => setStep("staff")}>
-            ← 戻る
-          </button>
-          <p className="mb-2 font-semibold">日時を選択してください</p>
+          <BackButton onClick={() => setStep("staff")} />
+          <p className="mb-3 text-base font-bold text-[#5C3D25]">日時を選択してください</p>
           <input
             type="date"
-            className="mb-4 w-full rounded border border-gray-300 p-2"
+            className="mb-4 w-full rounded-2xl border-2 border-[#E8D9C8] bg-white p-3 text-base"
             value={date}
             min={todayJstStr()}
             onChange={(e) => setDate(e.target.value)}
           />
-          {slotsLoading && <p className="text-sm text-gray-500">空き状況を確認中...</p>}
+          {slotsLoading && <p className="text-sm text-[#9C8570]">空き状況を確認中...</p>}
           {!slotsLoading && slotLabels.length === 0 && (
-            <p className="text-sm text-gray-500">この日は空きがありません</p>
+            <p className="text-sm text-[#9C8570]">この日は空きがありません</p>
           )}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-3">
             {slotLabels.map((s) => (
               <button
                 key={s.iso}
-                className={`rounded border p-2 text-sm ${
+                className={`rounded-xl border-2 p-3 text-base font-semibold transition-colors ${
                   selectedSlot === s.iso
-                    ? "border-black bg-black text-white"
-                    : "border-gray-300"
+                    ? "border-[#8B5E3C] bg-[#8B5E3C] text-white"
+                    : "border-[#E8D9C8] bg-white text-[#4A3826] active:bg-[#F5EAE0]"
                 }`}
                 onClick={() => setSelectedSlot(s.iso)}
               >
@@ -193,42 +191,34 @@ export default function ReservePage() {
               </button>
             ))}
           </div>
-          <button
-            disabled={!selectedSlot}
-            className="mt-6 w-full rounded bg-black p-3 text-white disabled:opacity-30"
-            onClick={() => setStep("note")}
-          >
+          <PrimaryButton disabled={!selectedSlot} onClick={() => setStep("note")}>
             次へ
-          </button>
+          </PrimaryButton>
         </div>
       )}
 
       {step === "note" && (
         <div>
-          <button className="mb-4 text-sm text-gray-500" onClick={() => setStep("datetime")}>
-            ← 戻る
-          </button>
-          <p className="mb-2 font-semibold">ご要望があればご記入ください（任意）</p>
+          <BackButton onClick={() => setStep("datetime")} />
+          <p className="mb-3 text-base font-bold text-[#5C3D25]">
+            ご要望があればご記入ください（任意）
+          </p>
           <textarea
-            className="mb-4 w-full rounded border border-gray-300 p-2"
+            className="mb-4 w-full rounded-2xl border-2 border-[#E8D9C8] bg-white p-3 text-base"
             rows={4}
             placeholder="例：毛先を軽くしたい、前髪を作りたい など"
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
-          <button className="w-full rounded bg-black p-3 text-white" onClick={() => setStep("confirm")}>
-            確認画面へ
-          </button>
+          <PrimaryButton onClick={() => setStep("confirm")}>確認画面へ</PrimaryButton>
         </div>
       )}
 
       {step === "confirm" && service && staff && selectedSlot && (
         <div>
-          <button className="mb-4 text-sm text-gray-500" onClick={() => setStep("note")}>
-            ← 戻る
-          </button>
-          <p className="mb-4 font-semibold">この内容で予約します</p>
-          <dl className="mb-6 space-y-2 text-sm">
+          <BackButton onClick={() => setStep("note")} />
+          <p className="mb-4 text-base font-bold text-[#5C3D25]">この内容で予約します</p>
+          <dl className="mb-6 space-y-3 rounded-2xl border-2 border-[#E8D9C8] bg-white p-4 text-sm">
             <Row label="メニュー" value={`${service.name}（¥${service.price.toLocaleString()}）`} />
             <Row label="担当" value={staff.name} />
             <Row
@@ -245,34 +235,57 @@ export default function ReservePage() {
             {note && <Row label="ご要望" value={note} />}
           </dl>
           {submitError && <p className="mb-4 text-sm text-red-600">{submitError}</p>}
-          <button
-            disabled={submitting}
-            className="w-full rounded bg-black p-3 text-white disabled:opacity-50"
-            onClick={handleSubmit}
-          >
+          <PrimaryButton disabled={submitting} onClick={handleSubmit}>
             {submitting ? "送信中..." : "予約を確定する"}
-          </button>
+          </PrimaryButton>
         </div>
       )}
 
       {step === "done" && (
         <div className="text-center">
-          <p className="mb-2 text-lg font-bold">予約が完了しました</p>
-          <p className="mb-6 text-sm text-gray-600">
+          <p className="mb-2 text-lg font-bold text-[#5C3D25]">予約が完了しました</p>
+          <p className="mb-6 text-sm text-[#7A6552]">
             LINEに確認メッセージをお送りしました。ご来店をお待ちしております。
           </p>
-          <button
-            className="w-full rounded bg-black p-3 text-white"
+          <PrimaryButton
             onClick={async () => {
               const liff = (await import("@line/liff")).default;
               if (liff.isInClient()) liff.closeWindow();
             }}
           >
             閉じる
-          </button>
+          </PrimaryButton>
         </div>
       )}
     </div>
+  );
+}
+
+function PrimaryButton({
+  children,
+  onClick,
+  disabled,
+}: {
+  children: ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      disabled={disabled}
+      className="mt-6 w-full rounded-full bg-[#8B5E3C] py-4 text-lg font-bold text-white shadow-md transition-colors active:bg-[#74492C] disabled:bg-[#D9C7B8] disabled:text-[#F5EAE0] disabled:shadow-none"
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+}
+
+function BackButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button className="mb-4 text-sm font-semibold text-[#8B5E3C]" onClick={onClick}>
+      ← 戻る
+    </button>
   );
 }
 
@@ -287,23 +300,19 @@ function StepList({
 }) {
   return (
     <div>
-      {onBack && (
-        <button className="mb-4 text-sm text-gray-500" onClick={onBack}>
-          ← 戻る
-        </button>
-      )}
-      <p className="mb-2 font-semibold">{title}</p>
-      <div className="space-y-2">
+      {onBack && <BackButton onClick={onBack} />}
+      <p className="mb-3 text-base font-bold text-[#5C3D25]">{title}</p>
+      <div className="space-y-3">
         {items.map((item) => (
           <button
             key={item.key}
-            className="w-full rounded border border-gray-300 p-3 text-left"
+            className="w-full rounded-2xl border-2 border-[#E8D9C8] bg-white p-4 text-left text-base font-semibold text-[#4A3826] shadow-sm transition-colors active:bg-[#F5EAE0]"
             onClick={item.onClick}
           >
             {item.label}
           </button>
         ))}
-        {items.length === 0 && <p className="text-sm text-gray-500">選択肢がありません</p>}
+        {items.length === 0 && <p className="text-sm text-[#9C8570]">選択肢がありません</p>}
       </div>
     </div>
   );
@@ -311,9 +320,9 @@ function StepList({
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between border-b border-gray-100 pb-2">
-      <dt className="text-gray-500">{label}</dt>
-      <dd className="font-medium">{value}</dd>
+    <div className="flex justify-between border-b border-[#F0E4D8] pb-2 last:border-0 last:pb-0">
+      <dt className="text-[#9C8570]">{label}</dt>
+      <dd className="font-medium text-[#4A3826]">{value}</dd>
     </div>
   );
 }

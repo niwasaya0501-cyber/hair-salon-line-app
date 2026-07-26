@@ -7,19 +7,26 @@
 - Next.js（App Router / TypeScript / Tailwind） on Vercel
 - Prisma（Postgres, Neon想定）
 - LINE Messaging API（`@line/bot-sdk`） / LIFF（`@line/liff`）
+- Dify（よくある質問Bot。LLMはGoogle Gemini経由）
 
 ## 進捗（フェーズ1: 予約システムの土台） — 完了 ✅
 
 - [x] DBスキーマ（Customer / Staff / Service / Reservation）
 - [x] LINE連携ヘルパー（メッセージ送受信・署名検証・LIFFログイン検証）
 - [x] 予約API（`/api/menu`, `/api/availability`, `/api/reservations`）
-- [x] LIFF予約画面（`/liff/reserve`）
+- [x] LIFF予約画面（`/liff/reserve`。茶色×クリームのブランドカラーでデザイン、レスポンシブ対応済み）
 - [x] Webhook（友だち追加時のあいさつ＋予約ボタン）
 - [x] Neon DBへの接続・マイグレーション実行（Vercel Marketplace経由でNeonを自動プロビジョニング）
 - [x] LINE Developersでの資格情報取得・実機での動作確認（友だち追加→あいさつ→LIFF予約まで確認済み）
 - [x] Vercel本番デプロイ（本番URL: `https://hair-salon-line-app.vercel.app`）
 
-フェーズ2以降（前日リマインド、よくある質問Bot等）は [`docs/SPEC.md`](./docs/SPEC.md) の一覧を参照。次はこのフェーズ2の機能追加に着手する。
+## 進捗（フェーズ4・5: よくある質問Bot・サロン紹介） — 完了 ✅
+
+- [x] よくある質問Bot（Dify連携）。Webhookでテキストメッセージを受信し、Dify Chat APIに問い合わせて回答（`src/lib/dify.ts`, `DifyConversation`テーブルで会話継続）
+- [x] サロン紹介ページ（`/about`）。コンセプト・スタイル写真ギャラリー・スタイリスト・メニュー・アクセスを掲載。写真は`public/images/about/`に置くだけで反映（未設置ならプレースホルダー表示）
+- [x] リッチメニュー（6分割: 予約／よくある質問／サロン紹介／クーポン／メンバーズカード／ヘアグッズ購入）。クーポンはLINE公式アカウント標準のクーポン機能を利用、未実装の項目はWebhook側で「準備中」を案内
+
+フェーズ2・3・6・7・8（前日リマインド、事前ヒアリング、メンバーズカード、リッチメニュー出し分け、ヘアグッズ購入）は未着手。詳細は [`docs/SPEC.md`](./docs/SPEC.md) を参照。
 
 ## セットアップ
 
@@ -44,8 +51,20 @@ cp .env.example .env
 | `LINE_CHANNEL_SECRET` | LINE Developers → Messaging APIチャネル → 「チャネル基本設定」タブ |
 | `LINE_LOGIN_CHANNEL_ID` | LINE Developers → LINEログインチャネル（LIFF用の別チャネル）→ 「チャネル基本設定」タブの Channel ID |
 | `NEXT_PUBLIC_LIFF_ID` | 上記LINEログインチャネルの「LIFF」タブでLIFFアプリを追加すると発行される |
+| `DIFY_API_KEY` | Dify（よくある質問Bot用チャットフローアプリ）画面左メニュー「APIアクセス」で発行 |
+| `DIFY_API_BASE_URL` | Dify Cloudの場合は既定値（`https://api.dify.ai/v1`）のままでよい |
 
 LIFFアプリを追加する際の「エンドポイントURL」は、デプロイ先のURL＋`/liff/reserve`（例: `https://xxxx.vercel.app/liff/reserve`）を指定する。
+
+### サロン紹介ページの写真設置（任意）
+
+`public/images/about/` に以下のファイル名で置くと、`/about`ページに反映される（置かなければプレースホルダー表示のまま動作する）。
+
+| ファイル名 | 用途 | 推奨サイズ |
+|---|---|---|
+| `hero.jpg` | トップの雰囲気画像 | 横長 1600×900程度 |
+| `style-1.jpg` 〜 `style-6.jpg` | カット後のスタイル写真ギャラリー（あるものだけ表示） | 正方形 600×600程度 |
+| `stylist-1.jpg`, `stylist-2.jpg`, ... | スタイリスト写真（表示順=Staffの`sortOrder`順） | 正方形 600×600程度 |
 
 ### 3. DBマイグレーション
 
