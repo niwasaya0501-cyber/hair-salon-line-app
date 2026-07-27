@@ -29,6 +29,16 @@ const FAQ_MENU_INTRO =
 const SALON_INTRO_TRIGGER = "サロン紹介";
 const SALON_INTRO_URL = "https://hair-salon-line-app.vercel.app/about";
 
+// 「場所」と送られた場合は地図（位置情報メッセージ）を返す
+// ※架空サロンのためダミー座標（東京駅）を設定。実店舗の住所が決まったら緯度経度を差し替える
+const LOCATION_TRIGGER = "場所";
+const SALON_LOCATION = {
+  title: "HAIR SALON NIWA（ダミー座標: 東京駅）",
+  address: "東京都千代田区丸の内1丁目9",
+  latitude: 35.681236,
+  longitude: 139.767125,
+};
+
 // リッチメニューの「メンバーズカード」から送られた場合は、来店スタンプの状況を返す
 // スタンプはご来店実績（開始日時が過去のキャンセルされていない予約）1件につき1個とする
 const MEMBERSHIP_CARD_TRIGGER = "メンバーズカード";
@@ -292,6 +302,19 @@ async function handleEvent(event: webhook.Event) {
             text: "当サロンのご紹介はこちらからご覧いただけます",
             actions: [{ type: "uri", label: "サロン紹介を見る", uri: SALON_INTRO_URL }],
           },
+        },
+      ]);
+      return;
+    }
+
+    if (text === LOCATION_TRIGGER) {
+      await replyMessage(event.replyToken, [
+        {
+          type: "location",
+          title: SALON_LOCATION.title,
+          address: SALON_LOCATION.address,
+          latitude: SALON_LOCATION.latitude,
+          longitude: SALON_LOCATION.longitude,
         },
       ]);
       return;
