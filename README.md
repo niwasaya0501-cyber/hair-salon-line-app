@@ -1,6 +1,22 @@
 # hair-salon-line-app
 
+![Next.js](https://img.shields.io/badge/Next.js-000000?logo=next.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-2D3748?logo=prisma&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-000000?logo=vercel&logoColor=white)
+![LINE](https://img.shields.io/badge/LINE-00C300?logo=line&logoColor=white)
+
 ヘアサロンの公式LINEシステム。「LINEひとつでマーケティングが完結する」ことをゴールに、予約・よくある質問・事前ヒアリング・サロン紹介LIFF・商品購入・前日リマインド・ポイントカード・リッチメニュー出し分けを段階的に実装する。詳しい仕様・予算試算は [`docs/SPEC.md`](./docs/SPEC.md) を参照。
+
+## スクリーンショット
+
+| 予約画面 (LIFF) | サロン紹介ページ | メンバーズカード (LINE) |
+|---|---|---|
+| ![予約画面](docs/screenshots/reserve.png) | ![サロン紹介](docs/screenshots/about.png) | ![メンバーズカード](docs/screenshots/membership-card.png) |
+
+友だち追加時のあいさつ〜リッチメニュー（予約／よくある質問／サロン紹介／クーポン／メンバーズカード／ヘアグッズ購入）が実際にLINE上で動作している画面：
+
+![友だち追加〜リッチメニュー](docs/screenshots/greeting.png)
 
 ## 技術スタック
 
@@ -108,4 +124,4 @@ vercel --prod
 環境変数のうちDB系（`DATABASE_URL`等）はNeon連携で自動同期されるが、LINE系4つ（`LINE_CHANNEL_ACCESS_TOKEN` / `LINE_CHANNEL_SECRET` / `LINE_LOGIN_CHANNEL_ID` / `NEXT_PUBLIC_LIFF_ID`）は`vercel env add <name> production`で別途登録する必要がある（登録後は再デプロイが必要）。
 
 - 本番URL: https://hair-salon-line-app.vercel.app
-- GitHubリポジトリ（非公開）: https://github.com/niwasaya0501-cyber/hair-salon-line-app
+- GitHubリポジトリ（公開）: https://github.com/niwasaya0501-cyber/hair-salon-line-app
